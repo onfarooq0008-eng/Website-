@@ -3,52 +3,72 @@ const puppeteer = require("puppeteer-core");
 
 const app = express();
 
+app.use(express.static("public"));
+
 let browser;
 
-async function startBrowser(){
+async function launchBrowser(){
+
+try {
 
 browser = await puppeteer.launch({
 
-executablePath:"/usr/bin/chromium",
+executablePath: "/usr/bin/chromium",
 
-headless:false,
+headless: false,
+
+userDataDir: "/data/browser",
 
 args:[
 "--no-sandbox",
+"--disable-setuid-sandbox",
 "--disable-dev-shm-usage",
+"--disable-gpu",
+"--no-first-run",
+"--no-default-browser-check",
 "--start-maximized"
-],
-
-userDataDir:"/data/browser"
+]
 
 });
 
 
-const page = await browser.newPage();
+const pages = await browser.pages();
+
+const page = pages[0];
 
 await page.goto(
 "https://www.aliexpress.com",
 {
-waitUntil:"domcontentloaded"
+waitUntil:"networkidle2",
+timeout:60000
 }
 );
 
+
+console.log("AliExpress loaded");
+
+
+}catch(e){
+
+console.log("Browser error:");
+console.log(e);
+
 }
 
-app.use(express.static("public"));
+}
+
 
 app.get("/status",(req,res)=>{
 res.json({
-status:"running",
-site:"AliExpress"
+running:true
 });
 });
 
 
-app.listen(8080,async()=>{
+app.listen(8080,()=>{
 
-console.log("Server started");
+console.log("Web server running on 8080");
 
-await startBrowser();
+launchBrowser();
 
 });
